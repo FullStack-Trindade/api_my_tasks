@@ -1,7 +1,7 @@
 const { Sequelize } = require('sequelize')
 const connection = require('../database')
 
-const Task = connection.define('task', {
+const Task = connection.define('tasks', {
     id:{
         type: Sequelize.INTEGER,
         autoIncrement:true, 
@@ -16,3 +16,5 @@ const Task = connection.define('task', {
         type: Sequelize.STRING
      }
 } )
+
+module.exports = Task
