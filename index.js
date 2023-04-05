@@ -142,7 +142,9 @@ app.post('/users', async (request, response) => {
 
         const user = await User.create(newUser)
 
-        response.status(201).json(user)
+        const { _password, ...userData } = user.toJSON
+
+        response.status(201).json(userData)
 
     } catch (error) {
         response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
@@ -157,6 +159,7 @@ app.post('/users/login', async (request, response) => {
                 cpf: request.body.cpf
             }
         })
+
         // verifica cpf
         if (!userInDatabase) {
             return response.status(404).json({ message: 'Cpf ou senha incorretos' })
@@ -178,7 +181,7 @@ app.post('/users/login', async (request, response) => {
                 expiresIn: '1h'
             }
         )
-
+        
         response.json({ name: userInDatabase.name, token: token })
 
     } catch (error) {
