@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const User = require('../models/user')
+
 
 function validateToken(request, response, next) {
     // validar se tem token no Header da requisição
@@ -15,20 +15,21 @@ function validateToken(request, response, next) {
 
     const tokenJwt = token.slice(7)
 
-    jwt.verify(tokenJwt, 'MINHA_CHAVE_SECRETA', (error, conteudoDoToken) => {
+    jwt.verify(tokenJwt, 'MINHA_CHAVE_SECRETA', function(error, conteudoDescodificado) {
         if (error) {
-
-            if (error.name === "TokenExpiredError") {
-                return response.status(403).json({ message: 'Token Expirado' })
-            } else if (error.name === "JsonWebTokenError") {
-                return response.status(403).json({ message: 'Token inválido' })
-            }
-
+          if (error.name === 'TokenExpiredError') {
+            return response.status(401).json({ error: 'Token expired' });
+          } else if (error.name === 'JsonWebTokenError') {
+            return response.status(401).json({ error: 'Invalid token' });
+          } else {
+            return response.status(500).json({ error: 'Internal server error' });
+          }
         } else {
-            
-            next()
+            console.log(conteudoDescodificado)
+            request.body.userId = conteudoDescodificado.id
+          return next();
         }
-    })
+      });
 
 }
 

@@ -28,11 +28,13 @@ app.get('/', (request, response) => {
 })
 
 // Cadastrar um nova tarefa
-app.post('/tarefas',validateToken, async (request, response) => {
+app.post('/tarefas', validateToken, async (request, response) => {
     try {
+        console.log(request.body)
         const tarefa = {
             name: request.body.name,
-            description: request.body.description
+            description: request.body.description,
+            user_id: request.body.userId
         }
 
         if (!tarefa.name || !tarefa.description) {
@@ -61,14 +63,17 @@ app.post('/tarefas',validateToken, async (request, response) => {
 
 app.get('/tarefas', validateToken, async (request, response) => {
     try {
-        const tasks = await Task.findAll()
+        const tasks = await Task.findAll({
+            where: {
+            user_id: request.body.userId
+        }})
         response.json(tasks)
     } catch (error) {
         response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
     }
 })
 
-app.delete('/tarefas/:id',validateToken, async (request, response) => {
+app.delete('/tarefas/:id', validateToken, async (request, response) => {
 
     try {
 
@@ -176,7 +181,8 @@ app.post('/users/login', async (request, response) => {
 
         const token = jwt.sign(
             {
-                id: userInDatabase.id
+                id: userInDatabase.id,
+                name: userInDatabase.name
             },
             'MINHA_CHAVE_SECRETA',
             {
