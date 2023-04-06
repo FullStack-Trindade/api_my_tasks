@@ -9,7 +9,8 @@ const User = require('./src/models/user')
 
 const log = require('./src/middlewares/log');
 const hello = require('./src/middlewares/hello');
-const validateNewUser = require('./src/middlewares/validate-new-user')
+const validateNewUser = require('./src/middlewares/validate-new-user');
+const validateToken = require('./src/middlewares/validate-token');
 
 const app = express()
 app.use(express.json()) //obrigatório
@@ -27,7 +28,7 @@ app.get('/', (request, response) => {
 })
 
 // Cadastrar um nova tarefa
-app.post('/tarefas', async (request, response) => {
+app.post('/tarefas',validateToken, async (request, response) => {
     try {
         const tarefa = {
             name: request.body.name,
@@ -58,7 +59,7 @@ app.post('/tarefas', async (request, response) => {
     }
 })
 
-app.get('/tarefas', async (request, response) => {
+app.get('/tarefas', validateToken, async (request, response) => {
     try {
         const tasks = await Task.findAll()
         response.json(tasks)
@@ -67,7 +68,7 @@ app.get('/tarefas', async (request, response) => {
     }
 })
 
-app.delete('/tarefas/:id', async (request, response) => {
+app.delete('/tarefas/:id',validateToken, async (request, response) => {
 
     try {
 
@@ -88,7 +89,7 @@ app.delete('/tarefas/:id', async (request, response) => {
 
 })
 
-app.put('/tarefas/:id', async (request, response) => {
+app.put('/tarefas/:id', validateToken, async (request, response) => {
 
     try {
 
