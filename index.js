@@ -7,17 +7,22 @@ const connection = require('./src/database');
 const Task = require('./src/models/task')
 const User = require('./src/models/user')
 
-const app = express()
+const log = require('./src/middlewares/log');
+const hello = require('./src/middlewares/hello');
+const validateNewUser = require('./src/middlewares/validate-new-user')
 
+const app = express()
 app.use(express.json()) //obrigatório
 
+
+app.use(hello)
+app.use(log)
 
 connection.authenticate()
 connection.sync({ alter: true })
 console.log('Connection has been established successfully.');
 
 app.get('/', (request, response) => {
-    console.log("Entrei aqui")
     response.json({ messagem: "Bem vindo" })
 })
 
@@ -49,7 +54,6 @@ app.post('/tarefas', async (request, response) => {
 
         response.status(201).json(newTask) // recomendada
     } catch (error) {
-        console.log(error)
         response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
     }
 })
@@ -99,21 +103,18 @@ app.put('/tarefas/:id', async (request, response) => {
         taskInDatabase.name = request.body.name || taskInDatabase.name
         taskInDatabase.description = request.body.description || taskInDatabase.description
 
-        console.log(taskInDatabase)
-
         await taskInDatabase.save() // UPDATE 
 
         response.json(taskInDatabase)
 
     } catch (error) {
-        console.log(error)
         response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
     }
 
 })
 
 
-app.post('/users', async (request, response) => {
+app.post('/users', validateNewUser, async (request, response) => {
     try {
 
         const userInDatabase = await User.findOne({
@@ -142,7 +143,7 @@ app.post('/users', async (request, response) => {
 
         const user = await User.create(newUser)
 
-        const { _password, ...userData } = user.toJSON
+        const { password, ...userData } = user.toJSON()
 
         response.status(201).json(userData)
 
@@ -181,7 +182,7 @@ app.post('/users/login', async (request, response) => {
                 expiresIn: '1h'
             }
         )
-        
+
         response.json({ name: userInDatabase.name, token: token })
 
     } catch (error) {
