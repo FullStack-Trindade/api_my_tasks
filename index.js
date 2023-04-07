@@ -1,20 +1,23 @@
+require('dotenv').config()
 const express = require('express');
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
 
 const connection = require('./src/database');
-
-const Task = require('./src/models/task')
-const User = require('./src/models/user')
 
 const log = require('./src/middlewares/log');
 const hello = require('./src/middlewares/hello');
 const validateNewUser = require('./src/middlewares/validate-new-user');
 const validateToken = require('./src/middlewares/validate-token');
 
+const createTask = require('./src/controllers/tasks/createTask');
+const findTasks = require('./src/controllers/tasks/findTasks');
+const deleteTask = require('./src/controllers/tasks/deleteTask');
+const updateTask = require('./src/controllers/tasks/updateTask');
+
+const createUser = require('./src/controllers/users/createUser');
+const createLogin = require('./src/controllers/users/createLogin');
+
 const app = express()
 app.use(express.json()) //obrigatório
-
 
 app.use(hello)
 app.use(log)
@@ -27,178 +30,15 @@ app.get('/', (request, response) => {
     response.json({ messagem: "Bem vindo" })
 })
 
-// Cadastrar um nova tarefa
-app.post('/tarefas', validateToken, async (request, response) => {
-    try {
-        console.log(request.body)
-        const tarefa = {
-            name: request.body.name,
-            description: request.body.description,
-            user_id: request.body.userId
-        }
+app.post('/tarefas', validateToken, createTask)
+app.get('/tarefas', validateToken, findTasks)
+app.delete('/tarefas/:id', validateToken, deleteTask)
+app.put('/tarefas/:id', validateToken, updateTask)
 
-        if (!tarefa.name || !tarefa.description) {
-            return response
-                .status(400)
-                .json({ message: 'Nome/Descrição é obrigatório' })
-        }
-
-        const taskInDatabase = await Task.findOne(
-            { where: { name: tarefa.name } }
-        ) // SELEC FROM taks where name = ''
-
-        if (taskInDatabase) {
-            return response
-                .status(400)
-                .json({ message: 'Já existe uma tarefa com esse nome' })
-        }
-
-        const newTask = await Task.create(tarefa)
-
-        response.status(201).json(newTask) // recomendada
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-})
-
-app.get('/tarefas', validateToken, async (request, response) => {
-    try {
-        const tasks = await Task.findAll({
-            where: {
-            user_id: request.body.userId
-        }})
-        response.json(tasks)
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-})
-
-app.delete('/tarefas/:id', validateToken, async (request, response) => {
-
-    try {
-
-        await Task.destroy({
-            where: {
-                id: request.params.id
-            }
-        })
-
-        response.status(200).json({ message: 'deletado com sucesso' })
-        //response.status(204).json()
-        // delete from tasks where id = id que recebi
-
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-
-
-})
-
-app.put('/tarefas/:id', validateToken, async (request, response) => {
-
-    try {
-
-        const taskInDatabase = await Task.findByPk(request.params.id) // select from tasks where id = ?
-
-        if (!taskInDatabase) {
-            return response
-                .status(404)
-                .json({ message: 'Tarefa não encontrado' })
-        }
-
-        taskInDatabase.name = request.body.name || taskInDatabase.name
-        taskInDatabase.description = request.body.description || taskInDatabase.description
-
-        await taskInDatabase.save() // UPDATE 
-
-        response.json(taskInDatabase)
-
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-
-})
-
-
-app.post('/users', validateNewUser, async (request, response) => {
-    try {
-
-        const userInDatabase = await User.findOne({
-            where: {
-                cpf: request.body.cpf
-            }
-        })
-
-        if (userInDatabase) {
-            return response
-                .status(409)
-                .json({ message: 'Já existe um usuário com essa conta' })
-        }
-
-
-        const hash = await bcrypt.hash(request.body.password, 10)
-
-        const newUser = {
-            name: request.body.name,
-            cpf: request.body.cpf,
-            password: hash
-        }
-
-
-        // criptografar a senha 
-
-        const user = await User.create(newUser)
-
-        const { password, ...userData } = user.toJSON()
-
-        response.status(201).json(userData)
-
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-})
-
-app.post('/users/login', async (request, response) => {
-
-    try {
-        const userInDatabase = await User.findOne({
-            where: {
-                cpf: request.body.cpf
-            }
-        })
-
-        // verifica cpf
-        if (!userInDatabase) {
-            return response.status(404).json({ message: 'Cpf ou senha incorretos' })
-        }
-
-        const passwordIsValid = await bcrypt.compare(request.body.password, userInDatabase.password)
-
-        // verifica se a senha está correta 
-        if (!passwordIsValid) {
-            return response.status(404).json({ message: 'Crendeciais incorreta[password]' })
-        }
-
-        const token = jwt.sign(
-            {
-                id: userInDatabase.id,
-                name: userInDatabase.name
-            },
-            'MINHA_CHAVE_SECRETA',
-            {
-                expiresIn: '1h'
-            }
-        )
-
-        response.json({ name: userInDatabase.name, token: token })
-
-    } catch (error) {
-        response.status(500).json({ message: 'Não conseguimos processar sua solicitação.' })
-    }
-})
+app.post('/users', validateNewUser, createUser)
+app.post('/users/login', createLogin )
 
 app.listen(3333, () => console.log("Aplicação online"))
-
 
         // "" false
         // 0 false
