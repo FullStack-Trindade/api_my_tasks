@@ -2,6 +2,20 @@ const { Sequelize } = require('sequelize')
 const connection = require('../database')
 const User = require('./user')
 
+/**
+ * @openapi
+ * components:
+ *  schemas:
+ *    CreateTaskEntries:
+ *      type: object
+ *      required: true
+ *        - name
+ *        - description
+ *      properties:
+ *        name:
+ *          type: string
+ *          default: Douglas
+ */
 const Task = connection.define('task', {
    id: {
       type: Sequelize.INTEGER,

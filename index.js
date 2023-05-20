@@ -6,15 +6,11 @@ const connection = require('./src/database');
 const log = require('./src/middlewares/log');
 const hello = require('./src/middlewares/hello');
 const validateNewUser = require('./src/middlewares/validate-new-user');
-const validateToken = require('./src/middlewares/validate-token');
-
-const createTask = require('./src/controllers/tasks/createTask');
-const findTasks = require('./src/controllers/tasks/findTasks');
-const deleteTask = require('./src/controllers/tasks/deleteTask');
-const updateTask = require('./src/controllers/tasks/updateTask');
 
 const createUser = require('./src/controllers/users/createUser');
 const createLogin = require('./src/controllers/users/createLogin');
+const taskRoutes = require('./src/routes/tasks');
+const { swaggerDocs } = require('./swagger');
 
 const app = express()
 app.use(express.json()) //obrigatório
@@ -30,13 +26,12 @@ app.get('/', (request, response) => {
     response.json({ messagem: "Bem vindo" })
 })
 
-app.post('/tarefas', validateToken, createTask)
-app.get('/tarefas', validateToken, findTasks)
-app.delete('/tarefas/:id', validateToken, deleteTask)
-app.put('/tarefas/:id', validateToken, updateTask)
+app.use('/tasks', taskRoutes)
 
 app.post('/users', validateNewUser, createUser)
 app.post('/users/login', createLogin )
+
+swaggerDocs(app, 3333);
 
 app.listen(3333, () => console.log("Aplicação online"))
 

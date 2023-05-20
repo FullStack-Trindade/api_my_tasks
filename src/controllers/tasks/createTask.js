@@ -21,7 +21,7 @@ async function createTask(request, response) {
 
         if (taskInDatabase) {
             return response
-                .status(400)
+                .status(409)
                 .json({ message: 'Já existe uma tarefa com esse nome' })
         }
 
